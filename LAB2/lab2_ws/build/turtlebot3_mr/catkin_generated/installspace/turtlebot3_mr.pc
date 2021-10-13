@@ -1,0 +1,8 @@
+prefix=/home/abhinav137/Desktop/NEU/EECE_5550/ROS_ASSIGNMENTS/LAB2/lab2_ws/install
+
+Name: turtlebot3_mr
+Description: Description of turtlebot3_mr
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
