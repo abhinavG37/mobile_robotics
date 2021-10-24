@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 import rospy
+import apriltag_ros
+from apriltag_ros.msg import AprilTagDetection
 from std_msgs.msg import String
 
 
 def callback(data):
-    rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.data)
+    print(dir(data))
+    tag = AprilTagDetection()
+    print(tag.pose.pose)
+    # rospy.loginfo(rospy.get_caller_id() + "I heard")
+
 
 
 def subscriber():
@@ -15,7 +21,7 @@ def subscriber():
     # run simultaneously.
     rospy.init_node('subscriber_nodePy', anonymous=True)
 
-    rospy.Subscriber("/tag_detections", String, callback)
+    rospy.Subscriber("/tag_detections", AprilTagDetection, callback)
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
