@@ -1,2 +1,2 @@
-trajectory_gen:turtlebot3_mr
+mobile_robotics:turtlebot3_mr
 -DCATKIN_DEVEL_PREFIX=/home/abhinav137/Desktop/NEU/EECE_5550/ROS_ASSIGNMENTS/LAB2/lab2_ws/devel -DCMAKE_INSTALL_PREFIX=/home/abhinav137/Desktop/NEU/EECE_5550/ROS_ASSIGNMENTS/LAB2/lab2_ws/install -G Unix Makefiles

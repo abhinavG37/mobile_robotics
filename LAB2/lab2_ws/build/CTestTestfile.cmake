@@ -6,4 +6,4 @@
 # testing this directory and lists subdirectories to be tested as well.
 subdirs("gtest")
 subdirs("turtlebot3_mr")
-subdirs("trajectory_gen")
+subdirs("mobile_robotics")
