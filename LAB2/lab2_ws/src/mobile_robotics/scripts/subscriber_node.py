@@ -3,7 +3,7 @@ import rospy
 import apriltag_ros
 from apriltag_ros.msg import AprilTagDetectionArray
 from std_msgs.msg import String
-import tf2_ros
+from LAB2.lab2_ws.src.mobile_robotics.scripts.packages import Kinematics
 
 
 class Detection:

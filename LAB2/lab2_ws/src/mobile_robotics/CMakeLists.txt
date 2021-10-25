@@ -8,11 +8,10 @@ project(mobile_robotics)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  apriltag_ros
   roscpp
   rospy
   std_msgs
-  apriltag_ros
-  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -106,7 +105,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES trajectory_gen
-  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
+  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime apriltag_ros
 #  DEPENDS system_lib
 )
 
@@ -122,7 +121,7 @@ include_directories(
 )
 
 add_executable(subscriber src/subscriber_node.cpp)
-target_link_libraries(subscriber ${catkin_LIBRARIES})
+target_link_libraries(subscriber  ${catkin_LIBRARIES})
 add_dependencies(subscriber mobile_robotics_generate_messages_cpp)
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -165,6 +164,7 @@ add_dependencies(subscriber mobile_robotics_generate_messages_cpp)
 ## in contrast to setup.py, you can choose the destination
  catkin_install_python(PROGRAMS
    scripts/subscriber_node.py
+   scripts/tf2_listener_node.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
