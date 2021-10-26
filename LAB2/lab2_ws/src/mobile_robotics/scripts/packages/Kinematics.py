@@ -2,7 +2,7 @@ import rospy
 from apriltag_ros.msg import AprilTagDetectionArray
 import tf2_ros
 import numpy as np
-import scipy.linalg as Operations
+import scipy.linalg as operations
 from matplotlib import pyplot as plt
 
 
@@ -27,7 +27,7 @@ class InverseKine:
 
     def i_kine(self):
         # noinspection PyTypeChecker
-        inv_Model = ((self.end_time - self.start_time) ** -1) * Operations.logm(Operations.inv(self.start_pose) @ self.end_pose, True)
+        inv_Model = ((self.end_time - self.start_time) ** -1) * operations.logm(operations.inv(self.start_pose) @ self.end_pose, True)
 
         # omega = [0                  -(r/w)*(rVel-lVel) (r/2)*(rVel+lVel);
         #         (r/w)*(rVel-lVel)    0                  0;
@@ -42,7 +42,7 @@ class InverseKine:
         self.phi_l = (self.W * theta_dot + 2 * x_dot) / self.R
         self.phi_r = (2 * x_dot - self.W * theta_dot) / self.R
 
-        return [self.phi_r, self.phi_l]
+        return self.phi_r, self.phi_l
 
 
 # Class Forward Kinematics
@@ -77,5 +77,5 @@ class ForwardKine:
             [(self.R / self.W) * (self.phi_r - self.phi_l), 0, 0],
             [0, 0, 0]
         ])
-        self.end_pose = self.start_pose * Operations.expm((self.end_time - self.start_time) * self.omega_dot)
+        self.end_pose = self.start_pose * operations.expm((self.end_time - self.start_time) * self.omega_dot)
         return self.end_pose
