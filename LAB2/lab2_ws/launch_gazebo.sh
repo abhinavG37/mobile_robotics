@@ -1,6 +1,5 @@
-
-source /opt/ros/noetic/setup.bash
-source ./LAB2/lab2_ws/devel/setup.bash
+#source /opt/ros/noetic/setup.bash
+#source ./LAB2/lab2_ws/devel/setup.bash
 sudo killall rosmaster
 sudo killall gzserver
 sudo killall gzclient
