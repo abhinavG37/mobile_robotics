@@ -10,14 +10,17 @@ from tf.transformations import euler_from_quaternion
 from geometry_msgs.msg import Twist
 
 
+# global deltaTime
+
+
 class Detection:
     def __init__(self):
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
-        self.loop_rate = rospy.Rate(10)
+        self.loop_rate = rospy.Rate(1)
         self.position = [0, 0, 0]
         self.euler = [0, 0, 0]
-        self.deltaT = 5
+        self.deltaT = int(input("Enter Value of Duration \t"))
         rospy.Subscriber("/tag_detections", AprilTagDetectionArray, self.callback)
 
     def point_transform_convention(self, pose):
@@ -87,30 +90,51 @@ class Detection:
         duration = rospy.Duration(deltaTime)
         end_time = start_time + duration
 
+        Kine_obj = InverseKine(start_pose_val, end_pose_val, 0, deltaTime)
+        x_dot, theta_dot, rVel, lVel = Kine_obj.i_kine(end_pose_val)
+        print('LVel velocity Expected:{} | RVel velocity Expected:{}'.format(lVel, rVel))
         while rospy.Time.now() <= end_time:
-            Kine_obj = InverseKine(start_pose_val, end_pose_val, 0, deltaTime)
-            x_dot, theta_dot = Kine_obj.i_kine(end_pose_val)
-            print(x_dot)
-            print(theta_dot)
-            msg.linear.x = x_dot
-            msg.linear.y = 0
-            msg.linear.z = 0
-            msg.angular.x = 0
-            msg.angular.y = 0
-            msg.angular.z = theta_dot
-            print("Publishing message: Linear:[{} {} {}] Angular[{} {} {}]".format(msg.linear.x, msg.linear.y, msg.linear.z, msg.angular.x, msg.angular.y, msg.angular.z))
-            pub.publish(msg)
+            if lVel > 6.33 or rVel > 6.33:
+                if rospy.Time.now() != end_time:
+                    print("Infeasible Constraints | Publishing max linear speed | Running for provided duration")
+                    msg.linear.x = 0.22
+                    msg.linear.y = 0
+                    msg.linear.z = 0
+                    msg.angular.x = 0
+                    msg.angular.y = 0
+                    msg.angular.z = 0
+                    pub.publish(msg)
+                else:
+                    print("START Time = END Time")
+                    msg.linear.x = 0
+                    msg.linear.y = 0
+                    msg.linear.z = 0
+                    msg.angular.x = 0
+                    msg.angular.y = 0
+                    msg.angular.z = 0
+                    pub.publish(msg)
+                    rospy.signal_shutdown("Node stops")
 
-            if rospy.Time.now() == end_time:
-                print("START Time = end time")
-                msg.linear.x = 0
-                msg.linear.y = 0
-                msg.linear.z = 0
-                msg.angular.x = 0
-                msg.angular.y = 0
-                msg.angular.z = 0
-                pub.publish(msg)
-                rospy.signal_shutdown("Node stops")
+            else:  # Normal commands within bounds
+                if rospy.Time.now() != end_time:
+                    msg.linear.x = x_dot
+                    msg.linear.y = 0
+                    msg.linear.z = 0
+                    msg.angular.x = 0
+                    msg.angular.y = 0
+                    msg.angular.z = theta_dot
+                    print("Publishing message: Linear:[{} {} {}] Angular[{} {} {}]".format(msg.linear.x, msg.linear.y, msg.linear.z, msg.angular.x, msg.angular.y, msg.angular.z))
+                    pub.publish(msg)
+                else:
+                    print("START Time = end time")
+                    msg.linear.x = 0
+                    msg.linear.y = 0
+                    msg.linear.z = 0
+                    msg.angular.x = 0
+                    msg.angular.y = 0
+                    msg.angular.z = 0
+                    pub.publish(msg)
+                    rospy.signal_shutdown("Node stops")
 
     @staticmethod
     def start():
@@ -140,19 +164,18 @@ class InverseKine:
         # noinspection PyTypeChecker
         inv_Model = ((self.end_time - self.start_time) ** -1) * operations.logm(operations.inv(self.start_pose) @ self.end_pose)
 
-        # omega = [0                  -(r/w)*(rVel-lVel) (r/2)*(rVel+lVel);
-        #         (r/w)*(rVel-lVel)    0                  0;
+        # omega = [0                  (r/w)*(rVel-lVel) (r/2)*(rVel+lVel);
+        #         -(r/w)*(rVel-lVel)    0                  0;
         #         0                    0                  0
         #         ];
         #    Solve for phi_l, phi_r in the linear system:
         #                                                   omega = inv_Model
 
-        # self.phi_l = (self.W * theta_dot + 2 * x_dot) / self.R
-        # self.phi_r = (2 * x_dot - self.W * theta_dot) / self.R
-
         theta_dot = inv_Model[0, 1]
         x_dot = inv_Model[0, 2]
-        return x_dot, theta_dot
+        self.phi_l = (self.W * theta_dot + 2 * x_dot) / (2*self.R)
+        self.phi_r = (2 * x_dot - self.W * theta_dot) / (2*self.R)
+        return x_dot, theta_dot, self.phi_r, self.phi_l
 
 
 # Class Forward Kinematics
@@ -190,8 +213,8 @@ class ForwardKine:
 
 
 if __name__ == '__main__':
+    # deltaTime = int(input("Enter duration of run:"))
     rospy.init_node('subscriber_nodePy', anonymous=True)
-    pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+    pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
     Listener_obj = Detection()
     rospy.spin()
-    # Detection.start(Listener_obj)
