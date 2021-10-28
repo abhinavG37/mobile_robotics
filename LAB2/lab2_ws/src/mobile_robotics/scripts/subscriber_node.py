@@ -69,7 +69,7 @@ class Detection:
         if len(data.detections) > 0:  # Detect tag pose with respect to camera rgb frame
             try:
                 transform_base_tag = self.tfBuffer.lookup_transform('base_footprint', 'tag_0', rospy.Time(0))
-                print("TRANSFORM BASE TO TAG: \n {}".format(transform_base_tag))
+                # print("TRANSFORM BASE TO TAG: \n {}".format(transform_base_tag))
                 [self.position, self.euler] = self.frame_transform_convention(transform_base_tag)
                 start_pose_val = np.identity(3)
                 init_tag_position_projection = np.array([self.position[0], self.position[1], 0])
@@ -84,18 +84,24 @@ class Detection:
                 msg_trans.angular.z = 0
                 ##############################################################################################
                 # ##########################DETERMINE STATIONARY ROTATION TIME AND DURATION #################
-                rotation_angle = math.atan2(self.position[1], self.position[0])
+
+                rotation_angle = math.atan2(init_tag_position_projection[1], init_tag_position_projection[0])
+
                 rotTime = rotation_angle/self.rotVel_max   #SAME FOR BOTH ROTATIONS
+                print("Rotation angle: {}\t |\t Rotation Time: {} \t| \tRotational Velocity: {}".format(rotation_angle, rotTime, self.rotVel_max))
                 # #############################ACTUATION FOR ROTATION##############################################################
                 start_time_rot1 = rospy.Time.now()
                 duration_rot1 = rospy.Duration(int(rotTime))
                 end_time_rot_1 = start_time_rot1 + duration_rot1
-                if rospy.Time.now() <= end_time_rot_1:
-                    msg_rot.angular.z = -self.rotVel_max
-                    pub.publish(msg_rot)
-                else:
-                    msg_rot.angular.z = 0
-                    pub.publish(msg_rot)
+                while True:
+                    print("1st Rotation")
+                    if rospy.Time.now() <= end_time_rot_1:
+                        msg_rot.angular.z = self.rotVel_max
+                        pub.publish(msg_rot)
+                    else:
+                        msg_rot.angular.z = 0
+                        pub.publish(msg_rot)
+                        break
                 ########################DETERMINE POSE AFTER ROTATION 1 #########################
                 rot_pose_01 = np.array([[math.cos(rotation_angle), -math.sin(rotation_angle), 0],
                                         [math.sin(rotation_angle), math.cos(rotation_angle), 0],
@@ -107,19 +113,22 @@ class Detection:
                 end_pose_val = np.array([[1, 0, init_tag_position_projection[0] - 0.12],
                                          [0, 1, init_tag_position_projection[1]],
                                          [0, 0, 1]])
-
+                print("1st Translation")
                 self.publisher_method(msg_trans, rot_pose_01, end_pose_val, self.deltaT)
                 ###########################COUNTER ROTATION################################################
                 start_time_rot2 = rospy.Time.now()
                 duration_rot2 = rospy.Duration(int(rotTime))
                 end_time_rot_2 = start_time_rot2 + duration_rot2
-                if rospy.Time.now() <= end_time_rot_2:
-                    msg_rot.angular.z = self.rotVel_max
-                    pub.publish(msg_rot)
-                else:
-                    msg_rot.angular.z = 0
-                    pub.publish(msg_rot)
-                # rot_pose_23 = np.array([[math.cos(-rotation_angle), -math.sin(-rotation_angle), 0],
+                while True:
+                    print("2nd rotation")
+                    if rospy.Time.now() <= end_time_rot_2:
+                        msg_rot.angular.z = -self.rotVel_max
+                        pub.publish(msg_rot)
+                    else:
+                        msg_rot.angular.z = 0
+                        pub.publish(msg_rot)
+                        break
+                    # rot_pose_23 = np.array([[math.cos(-rotation_angle), -math.sin(-rotation_angle), 0],
                 #                         [math.sin(-rotation_angle), math.cos(-rotation_angle), 0],
                 #                         [0, 0, 1]])
                 rospy.signal_shutdown("DONE")
@@ -139,16 +148,16 @@ class Detection:
 
         Kine_obj = InverseKine(start_pose_val, end_pose_val, 0, deltaTime)
         x_dot, theta_dot, rVel, lVel = Kine_obj.i_kine(end_pose_val)
-        print('LVel velocity Expected:{} | RVel velocity Expected:{}'.format(lVel, rVel))
+        # print('LVel velocity Expected:{} | RVel velocity Expected:{}'.format(lVel, rVel))
         while rospy.Time.now() <= end_time:
             if lVel > 6.33 or rVel > 6.33:
                 if rospy.Time.now() != end_time:
-                    print("Infeasible Constraints | Publishing max linear speed | Running for provided duration")
+                    # print("Infeasible Constraints | Publishing max linear speed | Running for provided duration")
                     msg.linear.x = 0.22
                     msg.angular.z = 0
                     pub.publish(msg)
                 else:
-                    print("START Time = END Time")
+                    # print("START Time = END Time")
                     msg.linear.x = 0
                     msg.angular.z = 0
                     pub.publish(msg)
@@ -157,7 +166,7 @@ class Detection:
                 if rospy.Time.now() != end_time:
                     msg.linear.x = x_dot
                     msg.angular.z = theta_dot
-                    print("Publishing message: Linear:[{} {} {}] Angular[{} {} {}]".format(msg.linear.x, msg.linear.y, msg.linear.z, msg.angular.x, msg.angular.y, msg.angular.z))
+                    # print("Publishing message: Linear:[{} {} {}] Angular[{} {} {}]".format(msg.linear.x, msg.linear.y, msg.linear.z, msg.angular.x, msg.angular.y, msg.angular.z))
                     pub.publish(msg)
                 else:
                     print("START Time = end time")
