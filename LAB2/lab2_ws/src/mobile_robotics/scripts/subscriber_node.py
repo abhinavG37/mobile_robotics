@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import math
+
 import rospy.timer
 import geometry_msgs.msg
 import numpy as np
@@ -21,6 +23,12 @@ class Detection:
         self.position = [0, 0, 0]
         self.euler = [0, 0, 0]
         self.deltaT = int(input("Enter Value of Duration \t"))
+
+        self.transVel_max = 0.22      #x_dot_max
+        self.rotVel_max = 2.74725     #Theta_dot_max
+        #Given a rotational angle theta: If we fix the rotational speed
+        #The minimum time taken to rotate by that angle
+        # is given by: t_rot = theta(radians)/2.74725
         rospy.Subscriber("/tag_detections", AprilTagDetectionArray, self.callback)
 
     def point_transform_convention(self, pose):
@@ -57,25 +65,64 @@ class Detection:
         return quat_msg
 
     def callback(self, data):
-        msg = geometry_msgs.msg.Twist()
+
         if len(data.detections) > 0:  # Detect tag pose with respect to camera rgb frame
             try:
                 transform_base_tag = self.tfBuffer.lookup_transform('base_footprint', 'tag_0', rospy.Time(0))
                 print("TRANSFORM BASE TO TAG: \n {}".format(transform_base_tag))
                 [self.position, self.euler] = self.frame_transform_convention(transform_base_tag)
-
+                start_pose_val = np.identity(3)
                 init_tag_position_projection = np.array([self.position[0], self.position[1], 0])
 
+                # #######################DEFINE MESSAGES FOR ROT AND TRANSLATION###########################
+                msg_rot = geometry_msgs.msg.Twist()
+                msg_rot.linear.x = 0
+                msg_rot.angular.z = 0
+
+                msg_trans = geometry_msgs.msg.Twist()
+                msg_trans.linear.x = 0
+                msg_trans.angular.z = 0
+                ##############################################################################################
+                # ##########################DETERMINE STATIONARY ROTATION TIME AND DURATION #################
+                rotation_angle = math.atan2(self.position[1], self.position[0])
+                rotTime = rotation_angle/self.rotVel_max   #SAME FOR BOTH ROTATIONS
+                # #############################ACTUATION FOR ROTATION##############################################################
+                start_time_rot1 = rospy.Time.now()
+                duration_rot1 = rospy.Duration(int(rotTime))
+                end_time_rot_1 = start_time_rot1 + duration_rot1
+                if rospy.Time.now() <= end_time_rot_1:
+                    msg_rot.angular.z = -self.rotVel_max
+                    pub.publish(msg_rot)
+                else:
+                    msg_rot.angular.z = 0
+                    pub.publish(msg_rot)
+                ########################DETERMINE POSE AFTER ROTATION 1 #########################
+                rot_pose_01 = np.array([[math.cos(rotation_angle), -math.sin(rotation_angle), 0],
+                                        [math.sin(rotation_angle), math.cos(rotation_angle), 0],
+                                        [0, 0, 1]])
+                #Feed this as initial pose to translation
+                ###############################TRANSLATION####################################
                 # Convert transformation Base->Tag to a SE(2) Pose using projection on the ground plane
-                start_pose_val = np.identity(3)
+
                 end_pose_val = np.array([[1, 0, init_tag_position_projection[0] - 0.12],
                                          [0, 1, init_tag_position_projection[1]],
                                          [0, 0, 1]])
-                print("Projected Position: \n {}".format(init_tag_position_projection))
-                print("End SE(2) pose:\n{} ".format(end_pose_val))
 
-                print("Calling Publisher for CMD_vel")
-                self.publisher_method(start_pose_val, end_pose_val, self.deltaT)
+                self.publisher_method(msg_trans, rot_pose_01, end_pose_val, self.deltaT)
+                ###########################COUNTER ROTATION################################################
+                start_time_rot2 = rospy.Time.now()
+                duration_rot2 = rospy.Duration(int(rotTime))
+                end_time_rot_2 = start_time_rot2 + duration_rot2
+                if rospy.Time.now() <= end_time_rot_2:
+                    msg_rot.angular.z = self.rotVel_max
+                    pub.publish(msg_rot)
+                else:
+                    msg_rot.angular.z = 0
+                    pub.publish(msg_rot)
+                # rot_pose_23 = np.array([[math.cos(-rotation_angle), -math.sin(-rotation_angle), 0],
+                #                         [math.sin(-rotation_angle), math.cos(-rotation_angle), 0],
+                #                         [0, 0, 1]])
+                rospy.signal_shutdown("DONE")
 
             except(tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 print("Tag not detected. Transformation stalled")
@@ -84,8 +131,8 @@ class Detection:
             rospy.loginfo(rospy.get_caller_id() + "\nTag Not Detected")
 
     @staticmethod
-    def publisher_method(start_pose_val, end_pose_val, deltaTime):
-        msg = geometry_msgs.msg.Twist()
+    def publisher_method(msg_trans, start_pose_val, end_pose_val, deltaTime):
+        msg = msg_trans
         start_time = rospy.Time.now()
         duration = rospy.Duration(deltaTime)
         end_time = start_time + duration
@@ -98,43 +145,26 @@ class Detection:
                 if rospy.Time.now() != end_time:
                     print("Infeasible Constraints | Publishing max linear speed | Running for provided duration")
                     msg.linear.x = 0.22
-                    msg.linear.y = 0
-                    msg.linear.z = 0
-                    msg.angular.x = 0
-                    msg.angular.y = 0
                     msg.angular.z = 0
                     pub.publish(msg)
                 else:
                     print("START Time = END Time")
                     msg.linear.x = 0
-                    msg.linear.y = 0
-                    msg.linear.z = 0
-                    msg.angular.x = 0
-                    msg.angular.y = 0
                     msg.angular.z = 0
                     pub.publish(msg)
-                    rospy.signal_shutdown("Node stops")
-
+                    break
             else:  # Normal commands within bounds
                 if rospy.Time.now() != end_time:
                     msg.linear.x = x_dot
-                    msg.linear.y = 0
-                    msg.linear.z = 0
-                    msg.angular.x = 0
-                    msg.angular.y = 0
                     msg.angular.z = theta_dot
                     print("Publishing message: Linear:[{} {} {}] Angular[{} {} {}]".format(msg.linear.x, msg.linear.y, msg.linear.z, msg.angular.x, msg.angular.y, msg.angular.z))
                     pub.publish(msg)
                 else:
                     print("START Time = end time")
                     msg.linear.x = 0
-                    msg.linear.y = 0
-                    msg.linear.z = 0
-                    msg.angular.x = 0
-                    msg.angular.y = 0
                     msg.angular.z = 0
                     pub.publish(msg)
-                    rospy.signal_shutdown("Node stops")
+                    break
 
     @staticmethod
     def start():
@@ -173,8 +203,8 @@ class InverseKine:
 
         theta_dot = inv_Model[0, 1]
         x_dot = inv_Model[0, 2]
-        self.phi_l = (self.W * theta_dot + 2 * x_dot) / (2*self.R)
-        self.phi_r = (2 * x_dot - self.W * theta_dot) / (2*self.R)
+        self.phi_l = (self.W * theta_dot + 2 * x_dot) / (2 * self.R)
+        self.phi_r = (2 * x_dot - self.W * theta_dot) / (2 * self.R)
         return x_dot, theta_dot, self.phi_r, self.phi_l
 
 
