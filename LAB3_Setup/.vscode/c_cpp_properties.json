@@ -1,0 +1,23 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "",
+        "limitSymbolsToIncludedHeaders": true
+      },
+      "includePath": [
+        "/home/abhinav137/Desktop/NEU/EECE_5550/ROS_ASSIGNMENTS/LAB3_Setup/install_isolated/include/**",
+        "/home/abhinav137/Desktop/NEU/EECE_5550/ROS_ASSIGNMENTS/LAB2/lab2_ws/devel/include/**",
+        "/home/abhinav137/Desktop/ROSjects/ROSject_1/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/abhinav137/Desktop/ROSjects/ROSject_1/src/hello_world/include/**",
+        "/home/abhinav137/Desktop/NEU/EECE_5550/ROS_ASSIGNMENTS/LAB2/lab2_ws/src/mobile_robotics/include/**",
+        "/home/abhinav137/Desktop/ROSjects/ROSject_4_Turtlebot3/src/turtlebot3_simulations/turtlebot3_fake/include/**",
+        "/home/abhinav137/Desktop/ROSjects/ROSject_4_Turtlebot3/src/turtlebot3_simulations/turtlebot3_gazebo/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS"
+    }
+  ],
+  "version": 4
+}
