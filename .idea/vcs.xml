@@ -3,5 +3,14 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/LAB2/lab2_ws/src/turtlebot3_mr" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LAB3/src/abseil-cpp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LAB3/src/src/cartographer" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LAB3/src/src/cartographer_ros" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LAB3_Setup/abseil-cpp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LAB3_Setup/src/cartographer" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LAB3_Setup/src/cartographer_ros" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LAB3_Setup_2/abseil-cpp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LAB3_Setup_2/src/cartographer" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/LAB3_Setup_2/src/cartographer_ros" vcs="Git" />
   </component>
 </project>
